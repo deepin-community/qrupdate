@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+# Needed to compile with gfortran 10, see #957723
+DEB_FFLAGS_MAINT_APPEND := -std=legacy
+
+include /usr/share/dpkg/default.mk
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(MAKE) lib FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)"
+	$(MAKE) solib FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)"
+	$(MAKE) test FFLAGS="$(FFLAGS)" LDFLAGS="$(LDFLAGS)"
+
+ifeq (,$(filter nodoc,$(DEB_BUILD_OPTIONS)))
+#extract docs from sources
+	cat src/*.f | perl debian/get-function-ref.pl > function-reference
+endif
+
+override_dh_auto_clean: 
+	$(MAKE) clean
+	rm -f function-reference
+
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=../debian/tmp PREFIX=/usr LIBDIR=lib/$(DEB_HOST_MULTIARCH)
